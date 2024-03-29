@@ -1,5 +1,4 @@
-{
-  "fruits": [
+[
     {
       "name": "apple",
       "color": "red",
@@ -60,5 +59,4 @@
       "quantity": 9,
       "price": 1.75
     }
-  ]
-}
+]
