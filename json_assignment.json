@@ -1,0 +1,64 @@
+{
+  "fruits": [
+    {
+      "name": "apple",
+      "color": "red",
+      "quantity": 5,
+      "price": 1.5
+    },
+    {
+      "name": "banana",
+      "color": "yellow",
+      "quantity": 10,
+      "price": 0.5
+    },
+    {
+      "name": "orange",
+      "color": "orange",
+      "quantity": 8,
+      "price": 0.75
+    },
+    {
+      "name": "grape",
+      "color": "purple",
+      "quantity": 15,
+      "price": 2.0
+    },
+    {
+      "name": "watermelon",
+      "color": "green",
+      "quantity": 20,
+      "price": 3.0
+    },
+    {
+      "name": "strawberry",
+      "color": "red",
+      "quantity": 12,
+      "price": 1.0
+    },
+    {
+      "name": "kiwi",
+      "color": "brown",
+      "quantity": 7,
+      "price": 1.25
+    },
+    {
+      "name": "pineapple",
+      "color": "yellow",
+      "quantity": 10,
+      "price": 2.5
+    },
+    {
+      "name": "mango",
+      "color": "orange",
+      "quantity": 6,
+      "price": 2.0
+    },
+    {
+      "name": "pear",
+      "color": "green",
+      "quantity": 9,
+      "price": 1.75
+    }
+  ]
+}
