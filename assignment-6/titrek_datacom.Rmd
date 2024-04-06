@@ -1,0 +1,138 @@
+---
+title: "titrek_datacom - 2018300231"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+## Setup
+```{r name='setup', echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+packages <- c("ggplot2", "dplyr", "datasets", "broom", "gapminder", "plotly")
+install.packages(setdiff(packages, rownames(installed.packages())))
+
+library(ggplot2)
+library(dplyr)
+library(datasets)
+library(broom)
+library(gapminder)
+library(plotly)
+```
+
+## Seatbelt Data Analysis
+___
+#### This analysis examines the relationship between the number of drivers killed and the number of front passengers who died in car accidents. It utilizes data from the Seatbelts dataset and visualizes the ties using a scatter plot with a linear regression line. The plot is further divided into facets based on law is applied or not.
+___
+```{r name='Seatbelt Data Analysis'}
+data(Seatbelts)
+seatbelts_df <- as.data.frame(Seatbelts)
+
+head(seatbelts_df)
+str(seatbelts_df)
+
+ggplot(data=seatbelts_df,
+       aes(x = drivers,
+           y = front))+
+  geom_point(color = "blue", shape = 17, size = 3)+    
+  geom_smooth(formula='y~x',method = "lm", color = "red", fill = "lightblue", se = TRUE)+
+  labs(title = "Relationship between Drivers and Front Passengers Killed",
+       x = "Drivers Killed", y = "Front Passengers Killed")+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 16))+
+  facet_wrap(. ~ law)
+```
+
+## Diamond Prices Data Analysis
+___
+#### This analysis focuses on understanding the distribution of diamond prices based on their cut. It utilizes the Diamonds dataset and visualizes the distribution using a boxplot. The boxplot provides insights into diamond prices' central tendency and spreads across different cuts.
+___
+```{r name='Diamond Prices Data Analysis'}
+data(diamonds)
+diamonds_df <- as.data.frame(diamonds)
+
+head(diamonds_df)
+str(diamonds_df)
+
+diamonds_df %>%
+  filter(price > 0) %>%
+  ggplot(aes(x = cut,
+             y = price,
+             fill = cut))+
+  geom_boxplot()+
+  labs(title = "Boxplot of Diamond Prices by Cut",
+       x = "Cut",
+       y = "Price ($)",
+       fill = "Cut")+
+  theme(legend.position = "none")
+```
+
+## Housing Sales Data Analysis
+___
+#### This analysis explores the total sales of houses in the top 5 cities over the years. It utilizes data from the txhousing dataset and calculates the total sales for each city. A line plot is used to visualize the total sales for each city's trend over time. Additionally, a dashed line representing the mean total sales for the top 5 cities is included in the plot to provide insights into the overall trend.
+___
+```{r name='Housing Sales Data Analysis'}
+data(txhousing)
+housing_df <- as.data.frame(txhousing)
+
+head(housing_df)
+str(housing_df)
+
+total_sales <- housing_df  %>%
+  group_by(city, year, .groups = "drop") %>%
+  summarise(total_sales = sum(sales), .groups = "drop")
+
+top_5_cities <- total_sales %>%
+  group_by(city) %>%
+  summarise(total_sales = sum(total_sales), .groups = "drop") %>%
+  top_n(5, total_sales) %>%
+  pull(city)
+
+top_5_data <- total_sales %>%
+  filter(city %in% top_5_cities)
+
+yearly_mean <- top_5_data %>%
+    group_by(year) %>%
+    summarise(year_mean = mean(total_sales))
+
+ggplot(data=top_5_data,
+       aes(x = year,
+           y = total_sales,
+           color = city))+
+  geom_line(linetype = "solid", linewidth = 1)+
+  geom_line(data = yearly_mean,
+            aes(x = year, y = year_mean),
+            color = "black", linetype = "dashed", linewidth = 1)+ 
+  scale_color_brewer(palette = "Set1")+  
+  labs(x = "Year", y = "Total Sales",
+       title = "Total Sales for Top 5 Cities Over the Years")+
+  theme_minimal()+
+  theme(axis.title = element_text(size = 14),  
+        axis.text = element_text(size = 12),   
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size = 14))  
+```
+
+## Gapminder Data Analysis
+___
+#### This analysis examines the relationship between GDP per capita, life expectancy, and population size for a subset of countries, including the United States, China, India, Turkey, and the United Kingdom. The Gapminder dataset, containing information on various countries over time (1952-2007), is utilized for this analysis.
+___
+```{r name='Gapminder Data Analysis'}
+gapminder_data <- as.data.frame(gapminder)
+
+subset_countries <- c("United States", "China", "India", "Turkey", "United Kingdom")
+subset_data <- gapminder_data %>%
+  filter(country %in% subset_countries) %>%
+  mutate(GDP_billion=pop*gdpPercap/10^9)
+
+head(subset_data)
+str(subset_data)
+
+p <- ggplot(data=subset_data,
+            aes(x=gdpPercap,
+                y=lifeExp,
+                color=country,
+                size=GDP_billion))+
+  geom_point()
+
+p
+ggplotly(p)
+```
