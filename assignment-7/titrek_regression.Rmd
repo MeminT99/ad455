@@ -1,0 +1,156 @@
+---
+title: "Multiple Linear Regression Analysis"
+author: "Mehmet Emin Titrek (2018300231)"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Setup
+```{r name='setup', echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(tidyverse)
+library(caret)
+library(cowplot)
+library(car)
+library(magrittr)
+library(lindia) 
+library(data.table)
+library(broom) 
+library(GGally) 
+```
+
+## Read World Happiness Data
+```{r name='Loading Data'}
+url <- "https://raw.githubusercontent.com/MeminT99/ad455/main/assignment-7/happiness_data.csv"
+data <- read.csv(url)
+
+# Filter the data for the year 2023 and remove rows with NA values
+data %<>%
+  select(-c("Positive.affect", "Negative.affect")) %>%
+  filter(year == 2023) %>%
+  na.omit()
+
+## First rows of the data
+head(data)
+```
+
+## Descriptive analysis
+
+#### We started by examining the data's summary statistics to understand the range and distribution of our variables, giving us insight into the data's characteristics.
+```{r name='Descriptive Analysis'}
+summary(data)
+
+ggplot(data, aes(x = Life.Ladder)) +
+  geom_histogram(color = "black", fill = "lightpink", bins = 20) +
+  labs(title = "Life Ladder", x = "Life Ladder", y = "Frequency") +
+  theme_minimal()
+
+histograms <- list(
+  ggplot(data, aes(x = Log.GDP.per.capita)) +
+    geom_histogram(color = "black", fill = "skyblue", bins = 20) +
+    labs(title = "Log GDP per Capita", x = "Log GDP per Capita", y = "Frequency") +
+    theme_minimal(),
+  
+  ggplot(data, aes(x = Social.support)) +
+    geom_histogram(color = "black", fill = "lightgreen", bins = 20) +
+    labs(title = "Social Support", x = "Social Support", y = "Frequency") +
+    theme_minimal(),
+  
+  ggplot(data, aes(x = Healthy.life.expectancy.at.birth)) +
+    geom_histogram(color = "black", fill = "lightcoral", bins = 20) +
+    labs(title = "Healthy Life Expectancy", x = "Healthy Life Expectancy", y = "Frequency") +
+    theme_minimal(),
+  
+  ggplot(data, aes(x = Freedom.to.make.life.choices)) +
+    geom_histogram(color = "black", fill = "lightsalmon", bins = 20) +
+    labs(title = "Freedom to Make Life Choices", x = "Freedom to Make Life Choices", y = "Frequency") +
+    theme_minimal(),
+  
+  ggplot(data, aes(x = Generosity)) +
+    geom_histogram(color = "black", fill = "lightblue", bins = 20) +
+    labs(title = "Generosity", x = "Generosity", y = "Frequency") +
+    theme_minimal(),
+  
+  ggplot(data, aes(x = Perceptions.of.corruption)) +
+    geom_histogram(color = "black", fill = "lightyellow", bins = 20) +
+    labs(title = "Perceptions of Corruption", x = "Perceptions of Corruption", y = "Frequency") +
+    theme_minimal()
+)
+
+plot_grid(plotlist = histograms, ncol = 2)
+
+correlation_matrix <- round(cor(data[, 3:9]), digits = 2)
+corrplot(correlation_matrix, method = "number", number.cex = 0.75, tl.cex = 0.6, tl.srt = 45)
+
+create_scatterplot <- function(x_var, title) {
+  plot <- ggplot(data, aes_string(x = x_var, y = "Life.Ladder"))+
+    geom_point()+ 
+    geom_smooth(method="lm", se=TRUE, color="red", formula='y ~ x')+  
+    labs(title=paste("Life Ladder vs.",title),
+         x=title,
+         y="Life Ladder") +
+    theme_minimal() 
+  return(plot)
+}
+
+scatterplot1 <- create_scatterplot("Log.GDP.per.capita", "Log GDP per Capita")
+scatterplot2 <- create_scatterplot("Social.support", "Social Support")
+scatterplot3 <- create_scatterplot("Healthy.life.expectancy.at.birth", "Healthy Life Expectancy")
+scatterplot4 <- create_scatterplot("Freedom.to.make.life.choices", "Freedom to Make Life Choices")
+scatterplot5 <- create_scatterplot("Generosity", "Generosity")
+scatterplot6 <- create_scatterplot("Perceptions.of.corruption", "Perceptions of Corruption")
+
+plot_grid(scatterplot1, scatterplot2, scatterplot3,
+          scatterplot4, scatterplot5, scatterplot6,
+          ncol = 2)
+```
+
+## Modeling
+
+#### For modeling, we chose variables like 'Log GDP per Capita,' 'Social Support,' 'Healthy Life Expectancy,' and 'Freedom to Make Life Choices' based on their known associations with overall life satisfaction.
+#### We also considered correlations between variables and checked for multicollinearity to ensure the model's robustness.
+```{r name='Modeling'}
+set.seed(455) 
+train_index <- createDataPartition(data$Life.Ladder, p = 0.8, list = FALSE)
+train_data <- data[train_index, ]
+test_data <- data[-train_index, ]
+
+model <- lm(Life.Ladder ~ Log.GDP.per.capita + Social.support +
+              Healthy.life.expectancy.at.birth + Freedom.to.make.life.choices,
+            data = train_data)
+
+summary(model)
+```
+
+## Residuals and Multicollinearity
+
+#### We analyzed residuals to ensure they meet linear regression assumptions and checked for multicollinearity using VIF values, ensuring the model's validity.
+```{r name='Residuals and Multicollinearity'}
+residuals_df <- data.frame(Fitted_Values = fitted(model),
+                           Residuals = residuals(model))
+
+ggplot(residuals_df, aes(x = Fitted_Values, y = Residuals)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted") +
+  theme_minimal()
+
+gg_qqplot(model, scale.factor = 1)
+
+vif_values <- vif(model)
+vif_values
+```
+
+## Model Interaction
+
+#### We introduced interaction terms to capture nuanced relationships between predictors, like 'Log GDP per Capita * Social Support,' allowing us to model complex interactions that affect life satisfaction.
+```{r name='Model Interaction'}
+model_interaction <- lm(Life.Ladder ~ Log.GDP.per.capita *
+                          Social.support + Healthy.life.expectancy.at.birth *
+                          Freedom.to.make.life.choices,
+                        data = train_data)
+
+summary(model_interaction)
+```
